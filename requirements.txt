@@ -5,7 +5,8 @@ beautifulsoup4
 docutils>=0.20.1
 email-validator
 Jinja2
-langchain>=0.1,<0.2
+langchain>=0.2,<0.3
+langchain-community>=0.2,<0.3
 langchain_openai
 names
 numexpr>=2.8.4
@@ -17,9 +18,11 @@ python-frontmatter
 PyYAML
 rich
 setuptools
-textract @ git+https://github.com/thehunmonkgroup/textract@41c8a14de9facbfe21a1881cda49ced67b3bb5a4
+textract @ git+https://github.com/thehunmonkgroup/textract@2109f34b4f3615004de1f2b2e635cfd61dae3cb7
 sqlalchemy>=1.4.48
 tiktoken
 pytest[dev]
 pytest-datadir[dev]
 pip-tools[dev]
+flake8[dev]
+black[dev]

@@ -1,92 +1,37 @@
 from langchain_openai import ChatOpenAI
 
 from lwe.core.provider import Provider, PresetValue
-from lwe.core import constants
 
 
-class CustomChatOpenAI(ChatOpenAI):
+class CustomChatOpenAICompat(ChatOpenAI):
     @property
     def _llm_type(self):
         """Return type of llm."""
-        return "chat_openai"
+        return "chat_openai_compat"
 
 
-class ProviderChatOpenai(Provider):
+class ProviderChatOpenaiCompat(Provider):
     """
-    Access to OpenAI chat models via the OpenAI API
+    Access to third-party chat models via an OpenAI compatible API
     """
 
     @property
     def capabilities(self):
         return {
             "chat": True,
+            "validate_models": False,
+            "models": {},
         }
 
     @property
     def default_model(self):
-        return constants.API_BACKEND_DEFAULT_MODEL
-
-    @property
-    def static_models(self):
-        return {
-            "gpt-3.5-turbo": {
-                "max_tokens": 16384,
-            },
-            "gpt-3.5-turbo-16k": {
-                "max_tokens": 16384,
-            },
-            "gpt-3.5-turbo-0613": {
-                "max_tokens": 4096,
-            },
-            "gpt-3.5-turbo-16k-0613": {
-                "max_tokens": 16384,
-            },
-            "gpt-3.5-turbo-1106": {
-                "max_tokens": 16384,
-            },
-            "gpt-3.5-turbo-0125": {
-                "max_tokens": 16384,
-            },
-            "gpt-4": {
-                "max_tokens": 8192,
-            },
-            "gpt-4-32k": {
-                "max_tokens": 32768,
-            },
-            "gpt-4-0613": {
-                "max_tokens": 8192,
-            },
-            "gpt-4-32k-0613": {
-                "max_tokens": 32768,
-            },
-            "gpt-4-turbo": {
-                "max_tokens": 131072,
-            },
-            "gpt-4-turbo-2024-04-09": {
-                "max_tokens": 131072,
-            },
-            "gpt-4-turbo-preview": {
-                "max_tokens": 131072,
-            },
-            "gpt-4-1106-preview": {
-                "max_tokens": 131072,
-            },
-            "gpt-4-0125-preview": {
-                "max_tokens": 131072,
-            },
-            "gpt-4o": {
-                "max_tokens": 131072,
-            },
-            "gpt-4o-2024-05-13": {
-                "max_tokens": 131072,
-            },
-        }
+        pass
 
     def prepare_messages_method(self):
         return self.prepare_messages_for_llm_chat
 
     def llm_factory(self):
-        return CustomChatOpenAI
+        return CustomChatOpenAICompat
 
     def customization_config(self):
         return {

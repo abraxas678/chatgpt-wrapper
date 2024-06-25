@@ -1,15 +1,13 @@
 from typing import Any, Iterator, List, Optional, Union
 
-from langchain.schema.messages import (
+from langchain_core.messages import (
     AIMessage,
     AIMessageChunk,
     BaseMessage,
 )
 
-from langchain.callbacks.manager import (
-    CallbackManagerForLLMRun,
-)
-from langchain.schema.output import ChatGenerationChunk
+from langchain_core.callbacks import CallbackManagerForLLMRun
+from langchain_core.outputs import ChatGenerationChunk
 
 # TODO: Re-enable if https://github.com/langchain-ai/langchain/pull/10200 lands.
 # from langchain.chat_models.fake import FakeMessagesListChatModel
@@ -20,14 +18,11 @@ from lwe.core import constants
 # TODO: Remove these definitions if https://github.com/langchain-ai/langchain/pull/10200 lands.
 import asyncio
 import time
-from typing import AsyncIterator, Dict
-
-from langchain.callbacks.manager import (
-    AsyncCallbackManagerForLLMRun,
-)
-from langchain.chat_models.base import BaseChatModel
-from langchain.schema import ChatResult
-from langchain.schema.output import ChatGeneration
+from typing import cast, AsyncIterator, Dict
+from langchain_core.callbacks import AsyncCallbackManagerForLLMRun
+from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import BaseMessageChunk
+from langchain_core.outputs import ChatGeneration, ChatResult
 
 # TODO: Remove these definitions if https://github.com/langchain-ai/langchain/pull/10200 lands.
 
@@ -37,7 +32,10 @@ DEFAULT_RESPONSE_MESSAGE = "test response"
 class FakeMessagesListChatModel(BaseChatModel):
     """Fake ChatModel for testing purposes."""
 
-    responses: Union[List[BaseMessage], List[List[BaseMessage]]]
+    responses: Union[
+        List[Union[BaseMessage, BaseMessageChunk, str]],
+        List[List[Union[BaseMessage, BaseMessageChunk, str]]],
+    ]
     sleep: Optional[float] = None
     i: int = 0
 
@@ -57,8 +55,9 @@ class FakeMessagesListChatModel(BaseChatModel):
         **kwargs: Any,
     ) -> ChatResult:
         response = self._call(messages, stop=stop, run_manager=run_manager, **kwargs)
-        generation = ChatGeneration(message=response)
-        return ChatResult(generations=[generation])
+        responses = response if isinstance(response, list) else [response]
+        generations = [ChatGeneration(message=res) for res in responses]
+        return ChatResult(generations=generations)
 
     def _call(
         self,
@@ -73,7 +72,24 @@ class FakeMessagesListChatModel(BaseChatModel):
             self.i += 1
         else:
             self.i = 0
-        return response
+        if isinstance(response, str):
+            response = AIMessage(content=response)
+        elif isinstance(response, BaseMessage):
+            pass
+        elif isinstance(response, list):
+            for i, item in enumerate(response):
+                if isinstance(item, str):
+                    response[i] = AIMessage(content=item)
+                elif not isinstance(item, BaseMessage):
+                    raise TypeError(f"Unexpected type in response list: {type(item)}")
+        else:
+            raise TypeError(f"Unexpected type for response: {type(response)}")
+        if isinstance(response, BaseMessage):
+            return response
+        elif isinstance(response, list) and all(isinstance(item, BaseMessage) for item in response):
+            return cast(List[BaseMessage], response)
+        else:
+            raise TypeError("Unexpected type after processing response")
 
     def _stream(
         self,
@@ -91,7 +107,13 @@ class FakeMessagesListChatModel(BaseChatModel):
         for c in response:
             if self.sleep is not None:
                 time.sleep(self.sleep)
-            yield ChatGenerationChunk(message=c)
+            if isinstance(c, AIMessageChunk):
+                chunk = c
+            elif isinstance(c, str):
+                chunk = AIMessageChunk(content=c)
+            else:
+                raise TypeError(f"Unexpected type for response chunk: {type(c)}")
+            yield ChatGenerationChunk(message=chunk)
 
     async def _astream(
         self,
@@ -109,7 +131,13 @@ class FakeMessagesListChatModel(BaseChatModel):
         for c in response:
             if self.sleep is not None:
                 await asyncio.sleep(self.sleep)
-            yield ChatGenerationChunk(message=c)
+            if isinstance(c, AIMessageChunk):
+                chunk = c
+            elif isinstance(c, str):
+                chunk = AIMessageChunk(content=c)
+            else:
+                raise TypeError(f"Unexpected type for response chunk: {type(c)}")
+            yield ChatGenerationChunk(message=chunk)
 
 
 class CustomFakeMessagesListChatModel(FakeMessagesListChatModel):
@@ -176,9 +204,9 @@ class ProviderFakeLlm(Provider):
     Fake LLM provider.
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, **kwargs):
         self._capabilities = DEFAULT_CAPABILITIES
-        super().__init__(config)
+        super().__init__(config, **kwargs)
 
     @property
     def capabilities(self):

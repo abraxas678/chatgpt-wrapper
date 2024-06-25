@@ -8,6 +8,14 @@ from lwe.core.config import Config
 from lwe.core import util
 from lwe.backends.api.repl import ApiRepl
 
+USER_DIRECTORIES = [
+    "templates",
+    "presets",
+    "plugins",
+    "workflows",
+    "tools",
+]
+
 
 def main():
     dummy_config = Config()
@@ -96,14 +104,13 @@ def main():
         action="store",
         help="Arguments to pass to the workflow",
     )
-    user_directories = [
-        "template",
-        "preset",
-        "plugin",
-        "workflow",
-        "function",
-    ]
-    for directory in user_directories:
+    parser.add_argument(
+        "--cache-dir",
+        metavar="PATH",
+        action="append",
+        help="Cache directory (can be specified multiple times)",
+    )
+    for directory in USER_DIRECTORIES:
         parser.add_argument(
             f"--{directory}-dir",
             metavar="PATH",
@@ -157,6 +164,11 @@ def main():
         config.set("debug.log.level", "debug")
     if args.preset is not None:
         config.set("model.default_preset", args.preset)
+    if args.cache_dir is not None:
+        config.set("directories.cache", args.cache_dir)
+    for directory in USER_DIRECTORIES:
+        if getattr(args, f"{directory}_dir") is not None:
+            config.set(f"directories.{directory}", getattr(args, f"{directory}_dir"))
     if args.system_message is not None:
         config.set("model.default_system_message", args.system_message)
 

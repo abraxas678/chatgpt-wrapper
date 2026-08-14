@@ -25,7 +25,7 @@ jobs:
 
       - name: Generate star history
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.STAR_HISTORY_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python .github/scripts/generate_star_history.py
 

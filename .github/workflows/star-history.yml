@@ -2,8 +2,8 @@ name: Star History
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 5 * * *"
+  # schedule:
+  #   - cron: "17 5 * * *"
 
 concurrency:
   group: github-pages
